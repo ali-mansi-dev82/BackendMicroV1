@@ -1,11 +1,8 @@
-const { genSaltSync, hashSync, compareSync } = require("bcrypt");
+const { hashSync, compareSync } = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 function hashPassword(password) {
-  const salt = genSaltSync(10);
-  console.log(salt);
-
-  return hashSync(password, salt);
+  return hashSync(password, process.env.SALT_SYNC);
 }
 function comparePassword(password, hashed) {
   return compareSync(password, hashed);

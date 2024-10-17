@@ -38,7 +38,7 @@ const Authorization = async (req, res, next) => {
           message: messages.User.NotFound,
         });
       }
-      if (user.accessToken !== token) {
+      if (!user.accessToken.includes(token)) {
         return res.send({
           statusCode: 401,
           message: "your token not valid!",

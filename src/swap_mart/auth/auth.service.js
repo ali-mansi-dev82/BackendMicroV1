@@ -2,7 +2,7 @@ const autoBind = require("auto-bind");
 const NodeEnv = require("../../common/constant/env.enum");
 const userModel = require("../user/user.model");
 const { makeCode } = require("../utils/random");
-const { signToken } = require("./auth.utils");
+const { signToken, hashPassword } = require("./auth.utils");
 
 class AuthService {
   #model;
@@ -18,9 +18,12 @@ class AuthService {
       } else {
         await this.#model.create({
           mobile,
-          otp: {
-            code: "000000",
-            expiresIn: 0,
+          auth: {
+            authType: "otp",
+            otp: {
+              code: "000000",
+              expiresIn: 0,
+            },
           },
         });
         return this.sendCode(mobile);
@@ -38,15 +41,12 @@ class AuthService {
     const now = Date.now();
     if (user?.otp?.expiresIn > now)
       return { statusCode: 400, message: " last code not expire" };
-    const code = await makeCode(6);
+    const code = makeCode(6);
 
     const expiresIn = Date.now() + 60 * 1000 * 2;
-    await user.updateOne({
-      otp: {
-        code,
-        expiresIn,
-      },
-    });
+    user.auth.otp = { code, expiresIn };
+    user.save();
+
     this.sendSMS(code);
     return {
       statusCode: 200,
@@ -62,10 +62,10 @@ class AuthService {
       const now = Date.now();
       const user = await this.#model.findOne({ mobile });
       if (user && typeof user === "object") {
-        if (user.otp.code === code) {
-          if (user?.otp?.expiresIn > now) {
-            const token = await signToken({ mobile, id: user?.id });
-            user.verfiedMobile = true;
+        if (user?.auth?.otp?.code === code) {
+          if (user?.auth?.otp?.expiresIn > now) {
+            const token = signToken({ mobile, id: user?.id });
+            user.verfiedAccount = true;
             user.accessToken = token;
             user.save();
             res.cookie("access_token", token, {
@@ -107,6 +107,57 @@ class AuthService {
       return false;
     }
     return true;
+  }
+  async checkExistByEmail(email) {
+    const user = await this.#model.findOne({ email });
+    if (user === null) {
+      return false;
+    }
+    return true;
+  }
+  async signUp(fullname, email, password) {
+    const checkExistByEmail = await this.checkExistByEmail(email);
+    if (checkExistByEmail) {
+      return { statusCode: 500, message: "user exist!" };
+    } else {
+      return await this.#model.create({
+        fullname,
+        email,
+        auth: {
+          authType: "basic",
+          basic: {
+            password: hashPassword(password),
+          },
+        },
+      });
+    }
+  }
+  async signIn(email, password, res) {
+    const user = await this.#model.findOne({ email });
+
+    if (user && typeof user === "object") {
+      const hashedPassword = hashPassword(password);
+      const userPassword = user?.auth?.basic?.password;
+
+      if (userPassword === hashedPassword) {
+        const token = signToken({ email, id: user?.id });
+        user.verfiedAccount = true;
+        user.accessToken = token;
+        user.save();
+        res.cookie("access_token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === NodeEnv,
+        });
+        return {
+          token,
+          user: { id: user?._id, email: user.email },
+          statusCode: 200,
+          message: "login successful",
+        };
+      }
+      return { statusCode: 100, message: "wrong password!" };
+    }
+    return { statusCode: 404, message: "user not exist!" };
   }
 }
 module.exports = new AuthService();
