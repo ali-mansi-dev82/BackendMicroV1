@@ -1,46 +1,40 @@
-const { default: mongoose } = require("mongoose");
+const { DataTypes } = require("@sequelize/core");
+const sequelize = require("../../config/sequelize.config");
 
-const OTPSchema = new mongoose.Schema({
-  code: {
-    type: String,
-    required: true,
-    default: undefined,
-    maxlength: 6,
-    minlength: 6,
-  },
-  expiresIn: { type: Number, required: false, default: 0 },
-});
-
-const BasicAuthSchema = new mongoose.Schema({
-  password: { type: String, required: true, unique: false },
-});
-
-const AuthSchema = new mongoose.Schema({
-  authType: { type: String, enum: ["otp", "basic", "oauth"] },
-  otp: { type: OTPSchema },
-  basic: { type: BasicAuthSchema },
-});
-
-const UserSchema = new mongoose.Schema(
+const UserModel = sequelize.define(
+  "sw_user",
   {
-    fullname: { type: String, required: false },
-    mobile: { type: String, required: false },
-    email: { type: String, required: false },
-    auth: { type: AuthSchema },
-    verfiedAccount: { type: Boolean, default: false, required: true },
-    accessToken: { type: [String], default: "" },
+    fullName: { type: DataTypes.STRING, allowNull: true },
+    mobile: { type: DataTypes.STRING, allowNull: true },
+    email: { type: DataTypes.STRING, allowNull: true },
+    authMethod: {
+      type: DataTypes.ENUM(["otp", "basic", "oauth"]),
+      defaultValue: "basic",
+    },
+    password: { type: DataTypes.STRING, allowNull: true },
+    otpCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: "",
+    },
+    otpCodeExpires: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+    },
+    verfiedAccount: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: true,
+    },
+    accessToken: { type: DataTypes.STRING, defaultValue: "", allowNull: true },
     role: {
-      type: String,
-      enum: ["admin", "teacher", "user"],
-      default: "user",
-      required: true,
+      type: DataTypes.ENUM(["admin", "teacher", "user"]),
+      defaultValue: "user",
+      allowNull: false,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-const userModel = mongoose.model("verification_user", UserSchema);
-
-module.exports = userModel;
+module.exports = UserModel;

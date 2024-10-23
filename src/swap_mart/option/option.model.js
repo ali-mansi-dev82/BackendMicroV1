@@ -1,17 +1,47 @@
-const { Schema, Types, model } = require("mongoose");
+const { DataTypes } = require("@sequelize/core");
+const sequelize = require("../../config/sequelize.config");
+const UserModel = require("../user/user.model");
+const PostModel = require("../post/post.model");
 
-const OptionSchema = new Schema({
-  title: { type: String, required: true },
-  key: { type: String, required: true },
-  type: {
-    type: String,
-    enum: ["number", "currency", "string", "array", "boolean"],
+const OptionModel = sequelize.define(
+  "sw_option",
+  {
+    title: { type: DataTypes.STRING, allowNull: false },
+    key: { type: DataTypes.STRING, allowNull: false },
+    type: {
+      type: DataTypes.ENUM([
+        "number",
+        "currency",
+        "string",
+        "array",
+        "boolean",
+      ]),
+    },
+    prefix: { type: DataTypes.STRING, required: false, default: "" },
+    enum: {
+      type: DataTypes.JSON,
+    },
+    required: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    category: { type: DataTypes.INTEGER, allowNull: false },
   },
-  prefix: { type: String, required: false, default: "" },
-  enum: { type: Array, default: [] },
-  guid: { type: String, required: false },
-  required: { type: Boolean, required: false, default: false },
-  category: { type: Types.ObjectId, ref: "category", required: true },
+  { timestamps: true }
+);
+OptionModel.belongsTo(UserModel, {
+  as: "user",
+  foreignKey: { name: "userId", onDelete: "CASCADE", onUpdate: "CASCADE" },
 });
-const OptionModel = model("option", OptionSchema);
+OptionModel.belongsTo(PostModel, {
+  as: "post",
+  foreignKey: { name: "postId", onDelete: "CASCADE", onUpdate: "CASCADE" },
+});
 module.exports = OptionModel;
+
+// const OptionSchema = new Schema({
+
+// });
+// const OptionModel = model("option", OptionSchema);
+// module.exports = OptionModel;

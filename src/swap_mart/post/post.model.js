@@ -1,25 +1,42 @@
-const { Schema, Types, model } = require("mongoose");
+const { DataTypes } = require("@sequelize/core");
+const sequelize = require("../../config/sequelize.config");
+const CategoryModel = require("../category/category.model");
+const UserModel = require("../user/user.model");
 
-const PostSchema = new Schema(
+const PostModel = sequelize.define(
+  "sw_post",
   {
-    user: { type: Types.ObjectId, ref: "verification_user", required: true },
-    title: { type: String, required: true },
-    content: { type: String, required: false },
-    slug: { type: String, required: true },
-    amount: { type: Number, required: true, default: 0 },
-    category: { type: Types.ObjectId, ref: "category", required: true },
-    province: { type: String, required: true },
-    city: { type: String, required: true },
-    district: { type: String, required: true },
-    cordinate: { type: [Number], required: true }, //51.1111112 31.658971111
-    images: { type: [String], required: false, default: [] },
-    options: { type: Object, required: false, default: [] },
-    status: { type: Number, require: false, default: 0 }, // { 0 : wating accept admin, 1 : need some changes, 2 : accept by admin, 3 : rejected by admin }
-    isDelete: { type: Boolean, require: false, default: false },
+    userId: { type: DataTypes.INTEGER, allowNull: false },
+    title: { type: DataTypes.STRING, allowNull: false },
+    content: { type: DataTypes.STRING, allowNull: true },
+    slug: { type: DataTypes.STRING, allowNull: false },
+    amount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    categoryId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    province: { type: DataTypes.STRING, allowNull: false },
+    city: { type: DataTypes.STRING, allowNull: false },
+    district: { type: DataTypes.STRING, allowNull: false },
+    cordinate: { type: DataTypes.JSON, allowNull: false }, //51.1111112 31.658971111
+    images: { type: DataTypes.JSON, allowNull: true, default: [] },
+    options: { type: DataTypes.JSON, allowNull: true, default: [] },
+    status: {
+      type: DataTypes.ENUM(["0", "1", "3"]),
+      require: false,
+      defaultValue: "0",
+    }, // { 0 : wating accept admin, 1 : need some changes, 2 : accept by admin, 3 : rejected by admin }
+    isDelete: { type: DataTypes.BOOLEAN, allowNull: true, defaultValue: false },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
-const postModel = model("post", PostSchema);
-module.exports = postModel;
+PostModel.belongsTo(CategoryModel, {
+  as: "category",
+  foreignKey: { name: "categoryId", onDelete: "CASCADE", onUpdate: "CASCADE" },
+});
+PostModel.belongsTo(UserModel, {
+  as: "user",
+  foreignKey: { name: "userId", onDelete: "CASCADE", onUpdate: "CASCADE" },
+});
+
+module.exports = PostModel;

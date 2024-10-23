@@ -1,36 +1,28 @@
-const { Schema, Types, default: mongoose } = require("mongoose");
+const { DataTypes } = require("@sequelize/core");
+const sequelize = require("../../config/sequelize.config");
 
-const CategorySchema = new Schema(
+const CategoryModel = sequelize.define(
+  "sw_category",
   {
-    name: { type: String, required: true },
-    slug: { type: String, required: true, unique: true, index: true },
-    icon: { type: String },
-    parent: {
-      type: Types.ObjectId,
-      ref: "category",
-      required: false,
-      default: null,
+    name: { type: DataTypes.STRING, index: true },
+    slug: { type: DataTypes.STRING, index: true, unique: true, index: true },
+    icon: { type: DataTypes.STRING },
+    parentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: null,
     },
-    parents: {
-      type: [Types.ObjectId],
-      ref: "category",
-      required: false,
-      default: [],
-    },
+    // parents: {
+    //   type: [Types.ObjectId],
+    //   ref: "category",
+    //   required: false,
+    //   default: [],
+    // },
   },
-  { versionKey: false, id: false, toJSON: { virtuals: true } }
+  { timestamps: true }
 );
-
-CategorySchema.virtual("children", {
-  ref: "category",
-  localField: "_id",
-  foreignField: "parent",
+CategoryModel.belongsTo(CategoryModel, {
+  as: "parent",
+  foreignKey: { name: "parentId", onDelete: "CASCADE", onUpdate: "CASCADE" },
 });
-
-function AutoPopultate(next) {
-  this.populate(["children"]);
-  next();
-}
-CategorySchema.pre("find", AutoPopultate).pre("findOne", AutoPopultate);
-const CategoryModel = mongoose.model("category", CategorySchema);
 module.exports = CategoryModel;
