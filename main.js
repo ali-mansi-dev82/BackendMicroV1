@@ -1,4 +1,5 @@
 const express = require("express");
+require("./src/config/sequelize.config");
 const swaggerConfig = require("./src/config/swagger.config");
 const { MainRouters } = require("./src/app.routes");
 const notFoundError = require("./src/common/exception/notFound.handler");
@@ -7,6 +8,8 @@ require("dotenv").config();
 const cors = require("cors");
 const path = require("path");
 const deleteExpiredImage = require("./src/common/cron-jobs/deleteExpiredImage");
+const UserModel = require("./src/swap_mart/user/user.model");
+const SyncsModels = require("./src/swap_mart/model.syncs");
 
 async function app() {
   const app = express();
@@ -18,7 +21,7 @@ async function app() {
   swaggerConfig(app);
   app.use(notFoundError);
   app.use(errorHandler);
-  require("./src/config/mongoose.config");
+  await SyncsModels();
   app.listen(process.env.PORT, () => {
     console.log(`server run in port ${process.env.PORT}`);
   });

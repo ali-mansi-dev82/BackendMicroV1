@@ -30,6 +30,8 @@ class AuthController {
   async signUp(req, res, next) {
     try {
       const { fullname, email, password } = req.body;
+      console.log('fullname');
+      
       const result = await this.#service.signUp(fullname, email, password);
       res.status(result.statusCode ?? 201).send(result);
     } catch (error) {

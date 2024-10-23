@@ -1,9 +1,16 @@
-const { Schema, Types, model } = require("mongoose");
+const { DataTypes } = require("@sequelize/core");
+const sequelize = require("../../config/sequelize.config");
 
-const ImageSchema = new Schema({
-  name: { type: String, unique: true, required: true },
-  expire: { type: Number, required: false, default: -1 /* infinity */ },
-});
-
-const ImageModel = model("image", ImageSchema);
+const ImageModel = sequelize.define(
+  "sw_image",
+  {
+    name: { type: DataTypes.STRING, unique: true, allowNull: false },
+    expire: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: -1 /* infinity */,
+    },
+  },
+  { timestamps: true }
+);
 module.exports = ImageModel;

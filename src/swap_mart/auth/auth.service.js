@@ -120,16 +120,15 @@ class AuthService {
     if (checkExistByEmail) {
       return { statusCode: 500, message: "user exist!" };
     } else {
-      return await this.#model.create({
-        fullname,
-        email,
-        auth: {
-          authType: "basic",
-          basic: {
-            password: hashPassword(password),
-          },
+      return await this.#model.create(
+        {
+          fullName: fullname,
+          email,
+          authMethod: "basic",
+          password: hashPassword(password),
         },
-      });
+        { fields: ["fullName", "email", "authMethod", "password"] }
+      );
     }
   }
   async signIn(email, password, res) {
