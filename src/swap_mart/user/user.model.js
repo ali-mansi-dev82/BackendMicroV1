@@ -6,7 +6,7 @@ const UserModel = sequelize.define(
   {
     fullName: { type: DataTypes.STRING, allowNull: true },
     mobile: { type: DataTypes.STRING, allowNull: true },
-    email: { type: DataTypes.STRING, allowNull: true },
+    email: { type: DataTypes.STRING, validate: { max: 35 }, allowNull: true },
     authMethod: {
       type: DataTypes.ENUM(["otp", "basic", "oauth"]),
       defaultValue: "basic",
@@ -18,7 +18,7 @@ const UserModel = sequelize.define(
       defaultValue: "",
     },
     otpCodeExpires: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: true,
       defaultValue: 0,
     },
@@ -33,8 +33,8 @@ const UserModel = sequelize.define(
       defaultValue: "user",
       allowNull: false,
     },
-  },
-  { timestamps: true }
+  }
+  // { timestamps: true }
 );
 
 module.exports = UserModel;

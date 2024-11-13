@@ -10,5 +10,5 @@ router.get("/my-note", Authorization, UserController.myNote);
 router.get("/my-seen", Authorization, UserController.mySeen);
 
 module.exports = {
-  UserRouters: router,
+  clUserRouters: router,
 };

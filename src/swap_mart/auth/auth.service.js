@@ -3,6 +3,9 @@ const NodeEnv = require("../../common/constant/env.enum");
 const userModel = require("../user/user.model");
 const { makeCode } = require("../utils/random");
 const { signToken, hashPassword } = require("./auth.utils");
+const UserModel = require("../user/user.model");
+const { log } = require("../../config/sequelize.config");
+const supabase = require("../../config/supbase.config");
 
 class AuthService {
   #model;
@@ -12,22 +15,13 @@ class AuthService {
   }
   async sendOTP(mobile) {
     try {
-      const checkExistByMobile = await this.checkExistByMobile(mobile);
-      if (checkExistByMobile) {
-        return this.sendCode(mobile);
-      } else {
-        await this.#model.create({
-          mobile,
-          auth: {
-            authType: "otp",
-            otp: {
-              code: "000000",
-              expiresIn: 0,
-            },
-          },
-        });
-        return this.sendCode(mobile);
-      }
+      const id = makeCode(4);
+      const { error } = await supabase
+        .from("users")
+        .insert({ id, mobile, authMethod: "basic" });
+
+      await this.sendCode(mobile);
+      return { statusCode: 201, message: "code successfully sended!" };
     } catch (error) {
       return {
         code: error?.code,
@@ -39,14 +33,15 @@ class AuthService {
     const user = await this.#model.findOne({ mobile });
     if (!user) return;
     const now = Date.now();
-    if (user?.otp?.expiresIn > now)
-      return { statusCode: 400, message: " last code not expire" };
+    if (user?.otpCodeExpires > now)
+      return { statusCode: 400, message: "last code not expire" };
     const code = makeCode(6);
-
     const expiresIn = Date.now() + 60 * 1000 * 2;
-    user.auth.otp = { code, expiresIn };
-    user.save();
 
+    this.#model.update(
+      { otpCode: code, otpCodeExpires: expiresIn },
+      { where: { mobile } }
+    );
     this.sendSMS(code);
     return {
       statusCode: 200,
@@ -60,14 +55,15 @@ class AuthService {
   async checkOTP(mobile, code, res) {
     try {
       const now = Date.now();
-      const user = await this.#model.findOne({ mobile });
+      const user = await this.#model.findOne({ where: { mobile } });
       if (user && typeof user === "object") {
-        if (user?.auth?.otp?.code === code) {
-          if (user?.auth?.otp?.expiresIn > now) {
+        if (user?.otpCode === code) {
+          if (user?.otpCodeExpires > now) {
             const token = signToken({ mobile, id: user?.id });
-            user.verfiedAccount = true;
-            user.accessToken = token;
-            user.save();
+            await this.#model.update(
+              { verfiedAccount: true, accessToken: token },
+              { where: { mobile } }
+            );
             res.cookie("access_token", token, {
               httpOnly: true,
               secure: process.env.NODE_ENV === NodeEnv,
@@ -110,39 +106,42 @@ class AuthService {
   }
   async checkExistByEmail(email) {
     const user = await this.#model.findOne({ email });
+    console.log(user);
     if (user === null) {
       return false;
     }
     return true;
   }
   async signUp(fullname, email, password) {
-    const checkExistByEmail = await this.checkExistByEmail(email);
-    if (checkExistByEmail) {
+    const [user, added] = await this.#model.findOrCreate({
+      where: { email },
+      fields: ["fullName", "email", "authMethod", "password"],
+      defaults: {
+        fullName: fullname,
+        email,
+        authMethod: "basic",
+        password: hashPassword(password),
+      },
+    });
+    if (!user.isNewRecord && !added) {
       return { statusCode: 500, message: "user exist!" };
     } else {
-      return await this.#model.create(
-        {
-          fullName: fullname,
-          email,
-          authMethod: "basic",
-          password: hashPassword(password),
-        },
-        { fields: ["fullName", "email", "authMethod", "password"] }
-      );
+      return { statusCode: 201, message: "user added" };
     }
   }
   async signIn(email, password, res) {
-    const user = await this.#model.findOne({ email });
+    const user = await this.#model.findOne({ where: { email } });
 
     if (user && typeof user === "object") {
       const hashedPassword = hashPassword(password);
-      const userPassword = user?.auth?.basic?.password;
+      const userPassword = user?.password;
 
       if (userPassword === hashedPassword) {
         const token = signToken({ email, id: user?.id });
-        user.verfiedAccount = true;
-        user.accessToken = token;
-        user.save();
+        await this.#model.update(
+          { verfiedAccount: true, accessToken: token },
+          { where: { email } }
+        );
         res.cookie("access_token", token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === NodeEnv,

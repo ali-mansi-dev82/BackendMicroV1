@@ -12,7 +12,8 @@ class AuthController {
   async sendOTP(req, res, next) {
     try {
       const { prefix, mobile } = req.body;
-      const result = await this.#service.sendOTP(`+${prefix}${mobile}`);
+      const mobilePhone = `+${prefix}${mobile}`;
+      const result = await this.#service.sendOTP(mobilePhone);
       res.status(result.statusCode ?? 201).send(result);
     } catch (error) {
       next(error);
@@ -30,8 +31,6 @@ class AuthController {
   async signUp(req, res, next) {
     try {
       const { fullname, email, password } = req.body;
-      console.log('fullname');
-      
       const result = await this.#service.signUp(fullname, email, password);
       res.status(result.statusCode ?? 201).send(result);
     } catch (error) {

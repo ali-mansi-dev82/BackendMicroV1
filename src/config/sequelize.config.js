@@ -1,12 +1,12 @@
 const { default: Sequelize } = require("@sequelize/core");
 
 const sequelize = new Sequelize({
-  host: "localhost",
+  host: "bcnk827f67fytor5mgme-mysql.services.clever-cloud.com",
   dialect: "mysql",
-  database: "swap_mart_db",
+  database: "bcnk827f67fytor5mgme",
   port: 3306,
-  user: "root",
-  password: "",
+  user: "u1il5ze2avph9cp0",
+  password: "AcnIrO1qUcBtepxmukFA",
 });
 
 sequelize
