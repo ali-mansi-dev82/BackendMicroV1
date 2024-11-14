@@ -1,6 +1,6 @@
 const messages = require("../../swap_mart/messages");
 const { verifyToken } = require("../../swap_mart/auth/auth.utils");
-const userModel = require("../../swap_mart/user/user.model");
+const supabase = require("../../config/supbase.config");
 
 const Authorization = async (req, res, next) => {
   try {
@@ -29,10 +29,12 @@ const Authorization = async (req, res, next) => {
 
     const data = verifyToken(token);
     if (typeof data === "object" && "id" in data) {
-      const user = await userModel
-        .findOne({ _id: data?.id }, { otp: 0 })
-        .lean();
-      if (!user) {
+      const { data } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", data?.id);
+
+      if (!data) {
         return res.send({
           statusCode: 404,
           message: messages.User.NotFound,

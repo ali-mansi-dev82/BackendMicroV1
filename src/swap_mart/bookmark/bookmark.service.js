@@ -1,39 +1,42 @@
 const autoBind = require("auto-bind");
-const Model = require("./bookmark.model");
+const supabase = require("../../config/supbase.config");
 
 class BookmarkService {
   #model;
   constructor() {
     autoBind(this);
-    this.#model = Model;
+    this.#model = supabase.from("sw_post_saved");
   }
   async checkExistByPostId(id) {
-    const data = await this.#model.findOne({ post: id });
+    const data = await this.#model.select({ postId: id });
     return data;
   }
   async save(user, post) {
-    const data = await this.#model.create({
-      user,
-      post,
+    const data = await this.#model.insert({
+      userId: user,
+      postId: post,
     });
     return data;
   }
   async remove(user, post) {
-    const data = await this.#model.deleteOne({
-      user,
-      post,
+    const data = await this.#model.delete({
+      userId: user,
+      postId: post,
     });
     return data;
   }
   async checkExist(user, post) {
-    const result = await this.#model.find({ user, post });
+    const result = await this.#model.select({ userId: user, postId: post });
     if (!result) return undefined;
     return result;
   }
   async myBookmarks(user) {
     return await this.#model
-      .find({ user }, {}, { sort: { updatedAt: -1 } })
-      .populate("post");
+      .select(
+        `*, 
+        sw_posts (*)`
+      )
+      .eq("userId", user);
   }
 }
 module.exports = new BookmarkService();

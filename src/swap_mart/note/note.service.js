@@ -8,37 +8,37 @@ class NoteService {
     this.#model = Model;
   }
   async save(user, post, content) {
-    const note = await this.#model.findOne({ user, post });
-    if (note?._id) {
-      if (content.trim().length <= 0) {
-        return await this.#model.deleteOne({ _id: note?._id });
-      }
-      note.content = content;
-      note.save();
-      return note;
-    }
-    const data = await this.#model.create({
-      user,
-      post,
-      content,
-    });
-    return data;
+    // const note = await this.#model.findOne({ user, post });
+    // if (note?._id) {
+    //   if (content.trim().length <= 0) {
+    //     return await this.#model.deleteOne({ _id: note?._id });
+    //   }
+    //   note.content = content;
+    //   note.save();
+    //   return note;
+    // }
+    // const data = await this.#model.create({
+    //   user,
+    //   post,
+    //   content,
+    // });
+    // return data;
   }
   async remove(id) {
-    const data = await this.#model.deleteOne({
-      _id: id,
-    });
-    return data;
+    // const data = await this.#model.deleteOne({
+    //   _id: id,
+    // });
+    // return data;
   }
   async checkExist(user, post) {
-    const result = await this.#model.findOne({ user, post });
-    if (!result) return undefined;
-    return result;
+    // const result = await this.#model.findOne({ user, post });
+    // if (!result) return undefined;
+    // return result;
   }
   async myNotes(user) {
-    return await this.#model
-      .find({ user }, {}, { sort: { _id: -1 } })
-      .populate("post");
+    // return await this.#model
+    //   .find({ user }, {}, { sort: { _id: -1 } })
+    //   .populate("post");
   }
 }
 module.exports = new NoteService();

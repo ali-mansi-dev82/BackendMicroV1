@@ -1,24 +1,23 @@
 const autoBind = require("auto-bind");
 const NodeEnv = require("../../common/constant/env.enum");
-const userModel = require("../user/user.model");
 const { makeCode } = require("../utils/random");
 const { signToken, hashPassword } = require("./auth.utils");
-const UserModel = require("../user/user.model");
-const { log } = require("../../config/sequelize.config");
 const supabase = require("../../config/supbase.config");
 
 class AuthService {
   #model;
   constructor() {
     autoBind(this);
-    this.#model = userModel;
+    this.#model = supabase.from("users");
   }
   async sendOTP(mobile) {
     try {
       const id = makeCode(4);
-      const { error } = await supabase
-        .from("users")
-        .insert({ id, mobile, authMethod: "basic" });
+      const { error } = await this.#model.insert({
+        id,
+        mobile,
+        authMethod: "basic",
+      });
 
       await this.sendCode(mobile);
       return { statusCode: 201, message: "code successfully sended!" };
@@ -30,7 +29,7 @@ class AuthService {
     }
   }
   async sendCode(mobile) {
-    const user = await this.#model.findOne({ mobile });
+    const user = await this.#model.select({ mobile });
     if (!user) return;
     const now = Date.now();
     if (user?.otpCodeExpires > now)
@@ -38,10 +37,9 @@ class AuthService {
     const code = makeCode(6);
     const expiresIn = Date.now() + 60 * 1000 * 2;
 
-    this.#model.update(
-      { otpCode: code, otpCodeExpires: expiresIn },
-      { where: { mobile } }
-    );
+    this.#model
+      .update({ otpCode: code, otpCodeExpires: expiresIn })
+      .eq("mobile", mobile);
     this.sendSMS(code);
     return {
       statusCode: 200,
@@ -55,15 +53,14 @@ class AuthService {
   async checkOTP(mobile, code, res) {
     try {
       const now = Date.now();
-      const user = await this.#model.findOne({ where: { mobile } });
+      const user = await this.#model.select({ mobile });
       if (user && typeof user === "object") {
         if (user?.otpCode === code) {
           if (user?.otpCodeExpires > now) {
             const token = signToken({ mobile, id: user?.id });
-            await this.#model.update(
-              { verfiedAccount: true, accessToken: token },
-              { where: { mobile } }
-            );
+            await this.#model
+              .update({ verfiedAccount: true, accessToken: token })
+              .eq("mobile", mobile);
             res.cookie("access_token", token, {
               httpOnly: true,
               secure: process.env.NODE_ENV === NodeEnv,

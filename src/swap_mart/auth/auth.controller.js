@@ -1,6 +1,4 @@
 const autoBind = require("auto-bind");
-const CookieNames = require("../../common/constant/cookieNames.enum");
-const AuthService = require("./auth.service");
 const authService = require("./auth.service");
 
 class AuthController {
