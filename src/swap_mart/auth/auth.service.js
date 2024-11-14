@@ -110,19 +110,20 @@ class AuthService {
     return true;
   }
   async signUp(fullname, email, password) {
-    const [user, added] = await this.#model.findOrCreate({
-      where: { email },
-      fields: ["fullName", "email", "authMethod", "password"],
-      defaults: {
+    const { data } = await supabase.from("users").select("*");
+
+    if (!data) {
+      return { statusCode: 500, message: "user exist!" };
+    } else {
+      const id = makeCode(4);
+      const { error } = await supabase.from("users").insert({
+        id,
+        mobile,
         fullName: fullname,
         email,
         authMethod: "basic",
         password: hashPassword(password),
-      },
-    });
-    if (!user.isNewRecord && !added) {
-      return { statusCode: 500, message: "user exist!" };
-    } else {
+      });
       return { statusCode: 201, message: "user added" };
     }
   }
